@@ -57,13 +57,6 @@ const Timer = () => {
 
 
 return (
-  <div
-    className="app-background d-flex justify-content-center align-items-center vh-100"
-    style={{
-      backgroundColor: "#ceb0f2ff", // purple background
-      fontFamily: "'Poppins', sans-serif", // cute modern font
-    }}
-  >
     <div className="container d-flex justify-content-center align-items-center vh-100">
       <div
         className="card shadow-lg p-4 rounded-4 text-center"
@@ -196,7 +189,6 @@ return (
 </div>
 </div>
     </div>
-  </div>
 );
 };
 

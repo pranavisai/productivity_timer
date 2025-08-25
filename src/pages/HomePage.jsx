@@ -29,13 +29,6 @@ const HomePage = () => {
   };
 
   return (
-    <div
-      className="app-background d-flex justify-content-center align-items-center vh-100"
-      style={{
-        backgroundColor: "#ceb0f2ff", // full purple background
-        fontFamily: "'Poppins', sans-serif", // modern rounded font
-      }}
-    >
       <div
         className="card shadow-lg p-4 rounded-4 text-center"
         style={{
@@ -120,7 +113,6 @@ const HomePage = () => {
           />
         </div>
       </div>
-    </div>
   );
 };
 
