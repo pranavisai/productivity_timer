@@ -1,34 +1,43 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import React from "react";
 
-function Navigation() {
+function Navigation({ user, onLogout }) {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    onLogout();
+    navigate("/login");
+  };
+
   return (
     <nav
       className="d-flex justify-content-between align-items-center p-3"
       style={{
-        backgroundColor: "transparent", // transparent navbar
+        backgroundColor: "transparent",
         position: "fixed",
         top: 0,
         left: 0,
         width: "100%",
-        zIndex: 1000, // make sure it stays on top
+        zIndex: 1000,
       }}
     >
-    <Link to="/" className="d-flex align-items-center text-decoration-none text-light">
+      <Link to="/" className="d-flex align-items-center text-decoration-none text-light">
         <img
-            src="/time-management.png"
-            alt="Home"
-            style={{ width: "30px", height: "30px", marginRight: "8px" }}
+          src="/time-management.png"
+          alt="Home"
+          style={{ width: "30px", height: "30px", marginRight: "8px" }}
         />
         <span className="home-text">ProTimer</span>
-    </Link>
+      </Link>
       <div>
         <Link to="/dashboard" className="btn btn-outline-light me-2">
           Dashboard
         </Link>
-        <Link to="/login" className="btn btn-outline-light me-2">
-          Login
-        </Link>  
+        {user && (
+          <button onClick={handleLogout} className="btn btn-outline-light me-2">
+            Logout
+          </button>
+        )}
       </div>
     </nav>
   );
