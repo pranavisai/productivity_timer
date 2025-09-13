@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import Navigation from './pages/Navigation';
 import Login from './pages/Login';
 import { useState, useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
 
 function AppWrapper() {
   const location = useLocation();
@@ -15,25 +16,58 @@ function AppWrapper() {
   // User state
   const [user, setUser] = useState(null);
 
-  // On mount, check localStorage for logged-in user
+  // On mount, check if session exists in backend
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) setUser(JSON.parse(storedUser));
+    fetch("http://localhost:5050/api/me", {
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.error) {
+          setUser(data);
+          localStorage.setItem("user", JSON.stringify(data));
+        } else {
+          localStorage.removeItem("user");
+          setUser(null);
+        }
+      })
+      .catch((err) => console.error("Failed to fetch /api/me", err));
   }, []);
 
-  // Handle login
+  // Handle login (used only if you ever do frontend login)
   const handleLogin = (userData) => {
     localStorage.setItem("user", JSON.stringify(userData));
     setUser(userData);
     navigate("/"); // redirect after login
   };
 
+  // Handle logout (with backend call)
   // Handle logout
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    setUser(null);
-    navigate("/login"); // redirect after logout
-  };
+const handleLogout = async () => {
+  try {
+    const res = await fetch("http://localhost:5050/auth/logout-api", {
+      method: "POST",
+      credentials: "include", // important to send cookies
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data.ok) {
+        localStorage.removeItem("user");
+        setUser(null);
+        navigate("/login"); // redirect after logout
+      } else {
+        console.error("Logout failed on server side");
+      }
+    } else {
+      console.error("Logout endpoint returned non-OK status");
+    }
+  } catch (err) {
+    console.error("Logout error:", err);
+    // fallback: full redirect
+    window.location.href = "http://localhost:5050/auth/logout";
+  }
+};
 
   // Hide navigation only on the login page
   const hideNav = location.pathname === "/login";
@@ -56,9 +90,9 @@ function AppWrapper() {
           style={{ width: "100%" }}
         >
           <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/timer" element={<Timer />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/" element={user ? <HomePage /> : <Navigate to="/login" replace />} />
+            <Route path="/timer" element={user ? <Timer /> : <Navigate to="/login" replace />} />
+            <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" replace />} />
             <Route path="/login" element={<Login onLogin={handleLogin} />} />
           </Routes>
         </div>

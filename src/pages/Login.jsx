@@ -1,21 +1,36 @@
-import React, {useRef, useEffect, useState} from "react";
+import React, { useRef, useEffect, useState } from "react";
 import Lottie from "lottie-react";
 import loginAnimation from "../assets/animations/login_animation.json";
 
-const LoginPage = () => {
-    const textRef = useRef(null);
-    const [textHeight, setTextHeight] = useState(0);
+const LoginPage = ({ onLogin }) => {
+  const textRef = useRef(null);
+  const [textHeight, setTextHeight] = useState(0);
 
-    useEffect(() => {
-        if (textRef.current) {
-        setTextHeight(textRef.current.offsetHeight);
+  useEffect(() => {
+    if (textRef.current) {
+      setTextHeight(textRef.current.offsetHeight);
+    }
+    const handleResize = () => {
+      if (textRef.current) setTextHeight(textRef.current.offsetHeight);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // 🔑 Check if backend already has a logged-in session
+  useEffect(() => {
+    fetch("http://localhost:5050/api/me", {
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.error) {
+          onLogin(data); // ✅ sets user in AppWrapper
         }
-        const handleResize = () => {
-        if (textRef.current) setTextHeight(textRef.current.offsetHeight);
-        };
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-    }, []);
+      })
+      .catch((err) => console.error(err));
+  }, [onLogin]);
+
   return (
     <div className="container d-flex justify-content-center align-items-center vh-100">
       <div
