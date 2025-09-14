@@ -9,6 +9,7 @@ import stats_db from "./routes/stats.mjs";
 import session from "express-session";
 import passport from "passport";
 import authRoutes from "./auth.mjs";
+import sessionRoutes from "./routes/sessions.mjs";
 
 const app = express();
 const PORT = 5050;
@@ -36,6 +37,7 @@ app.use("/api", advice_ai);
 app.use("/api", prediction_ai);
 app.use("/api", stats_db);
 app.use("/auth", authRoutes);
+app.use("/api/session", sessionRoutes);
 
 // Logged-in user info
 app.get("/api/me", (req, res) => {

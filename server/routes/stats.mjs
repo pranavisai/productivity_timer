@@ -1,27 +1,53 @@
 import express from "express";
 import pool from "./db.mjs";
+import { ensureAuth } from "../middlewares/authentication.mjs";
 
 const router = express.Router();
 
-router.get("/stats/:googleId", async (req, res) => {
-  const { googleId } = req.params;
+// constants for dashboard
+const CHAI_MIN = 15;
+const MEDITATION_MIN = 5;
 
+router.get("/stats/:userId", ensureAuth, async (req, res) => {
   try {
-    const query = `
-      select
-          sum(s.duration_seconds) - coalesce(sum(extract(epoch from (b.ended_at - b.started_at))::int),0) as total_focus_seconds,
-          coalesce(sum(extract(epoch from (b.ended_at - b.started_at))::int),0) as total_break_seconds,
-          count(s.id) as sessions_completed,
-          avg(s.duration_seconds - coalesce(extract(epoch from (b.ended_at - b.started_at))::int,0)) as avg_focus_seconds
-      from sessions s
-      left join breaks b on s.id = b.session_id
-      where s.user_id = (select id from users where google_id=$1);
-    `;
+    const userId = Number(req.params.userId);
+    if (isNaN(userId) || userId !== Number(req.user.id)) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
 
-    const result = await pool.query(query, [googleId]);
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error(err);
+    const sess = await pool.query(
+      `SELECT 
+         COUNT(*) FILTER (WHERE ended_at IS NOT NULL) AS sessions_completed,
+         COALESCE(SUM(EXTRACT(EPOCH FROM (ended_at - started_at))),0) AS total_focus_seconds,
+         COALESCE(AVG(EXTRACT(EPOCH FROM (ended_at - started_at))),0) AS avg_focus_seconds
+       FROM sessions
+       WHERE user_id=$1`,
+      [userId]
+    );
+
+    const br = await pool.query(
+      `SELECT COALESCE(chai_count,0) AS chai, COALESCE(meditation_count,0) AS meditation
+         FROM breaks
+        WHERE user_id=$1`,
+      [userId]
+    );
+
+    const sessions_completed = Number(sess.rows[0].sessions_completed || 0);
+    const total_focus_seconds = Number(sess.rows[0].total_focus_seconds || 0);
+    const avg_focus_seconds = Number(sess.rows[0].avg_focus_seconds || 0);
+
+    const chai_count = br.rows[0]?.chai || 0;
+    const meditation_count = br.rows[0]?.meditation || 0;
+    const total_break_seconds = (chai_count * CHAI_MIN + meditation_count * MEDITATION_MIN) * 60;
+
+    res.json({
+      sessions_completed,
+      total_focus_seconds,
+      total_break_seconds,
+      avg_focus_seconds,
+    });
+  } catch (e) {
+    console.error("Stats error", e);
     res.status(500).json({ error: "Failed to fetch stats" });
   }
 });
